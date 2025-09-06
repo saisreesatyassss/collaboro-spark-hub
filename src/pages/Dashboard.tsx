@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { 
   FolderKanban, 
@@ -11,9 +12,11 @@ import {
 } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { ProjectCard } from "@/components/dashboard/ProjectCard";
+import { CreateProjectModal } from "@/components/modals/CreateProjectModal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import heroImage from "@/assets/hero-collaboration.jpg";
 
 // Mock data
@@ -130,6 +133,18 @@ const activities = [
 ];
 
 export default function Dashboard() {
+  const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const { toast } = useToast();
+
+  const handleCreateProject = (data: any) => {
+    // In a real app, this would make an API call
+    console.log('Creating project:', data);
+    toast({
+      title: "Project Created",
+      description: `${data.name} has been created successfully.`,
+    });
+  };
+
   return (
     <div className="p-6 space-y-8">
       {/* Hero Section */}
@@ -147,7 +162,7 @@ export default function Dashboard() {
             You have 3 pending tasks and 2 upcoming deadlines. Let's get productive!
           </p>
           <div className="flex flex-wrap gap-4">
-            <Button variant="secondary" size="lg">
+            <Button variant="secondary" size="lg" onClick={() => setIsCreateProjectOpen(true)}>
               <Plus className="h-5 w-5 mr-2" />
               New Project
             </Button>
@@ -183,7 +198,7 @@ export default function Dashboard() {
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-foreground">Active Projects</h2>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => setIsCreateProjectOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               New Project
             </Button>
@@ -259,6 +274,13 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Modals */}
+      <CreateProjectModal 
+        open={isCreateProjectOpen} 
+        onOpenChange={setIsCreateProjectOpen}
+        onSubmit={handleCreateProject}
+      />
     </div>
   );
 }

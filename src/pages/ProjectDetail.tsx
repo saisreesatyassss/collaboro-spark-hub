@@ -18,10 +18,61 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
+import { CreateTaskModal } from "@/components/modals/CreateTaskModal";
+import { KanbanBoard } from "@/components/kanban/KanbanBoard";
+import { useToast } from "@/hooks/use-toast";
+import { Task, TaskStatus } from "@/types/task";
 
 export default function ProjectDetail() {
   const { projectId } = useParams();
   const [activeTab, setActiveTab] = useState("board");
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const { toast } = useToast();
+
+  // Initialize mock tasks data
+  useState(() => {
+    if (tasks.length === 0) {
+      setTasks([
+        {
+          id: '1',
+          projectId: projectId || '1',
+          title: 'Design System Setup',
+          description: 'Create the foundational design system components',
+          assigneeId: '1',
+          dueDate: '2024-12-20',
+          priority: 'high',
+          status: 'todo',
+          tags: ['Frontend', 'Design'],
+          createdAt: '2024-12-01',
+        },
+        {
+          id: '2',
+          projectId: projectId || '1',
+          title: 'API Integration',
+          description: 'Integrate with the backend API endpoints',
+          assigneeId: '2',
+          dueDate: '2024-12-25',
+          priority: 'medium',
+          status: 'in_progress',
+          tags: ['Backend', 'API'],
+          createdAt: '2024-12-02',
+        },
+        {
+          id: '3',
+          projectId: projectId || '1',
+          title: 'User Testing',
+          description: 'Conduct user testing sessions',
+          assigneeId: '3',
+          dueDate: '2024-12-15',
+          priority: 'low',
+          status: 'done',
+          tags: ['Testing', 'Research'],
+          createdAt: '2024-11-28',
+        },
+      ]);
+    }
+  });
 
   // Mock project data - in real app, fetch based on projectId
   const project = {
@@ -42,6 +93,47 @@ export default function ProjectDetail() {
     priority: 'high' as const,
     status: 'active',
     createdAt: 'November 1, 2024'
+  };
+
+  const handleCreateTask = (taskData: any) => {
+    const newTask: Task = {
+      id: Date.now().toString(),
+      projectId: projectId || '1',
+      title: taskData.name,
+      description: taskData.description,
+      assigneeId: taskData.assignee,
+      dueDate: taskData.deadline?.toISOString(),
+      priority: 'medium',
+      status: 'todo',
+      tags: taskData.tags,
+      createdAt: new Date().toISOString(),
+    };
+    
+    setTasks(prev => [...prev, newTask]);
+    toast({
+      title: "Task Created",
+      description: `${taskData.name} has been added to the project.`,
+    });
+  };
+
+  const handleTaskMove = (taskId: string, newStatus: TaskStatus) => {
+    setTasks(prev => 
+      prev.map(task => 
+        task.id === taskId ? { ...task, status: newStatus } : task
+      )
+    );
+    toast({
+      title: "Task Updated",
+      description: "Task status has been updated.",
+    });
+  };
+
+  const handleTaskUpdate = (taskId: string, updates: Partial<Task>) => {
+    setTasks(prev => 
+      prev.map(task => 
+        task.id === taskId ? { ...task, ...updates } : task
+      )
+    );
   };
 
   const priorityColors = {
@@ -172,7 +264,7 @@ export default function ProjectDetail() {
               <Card className="p-4 bg-gradient-surface border border-border/50">
                 <h3 className="font-semibold text-foreground mb-3">Quick Actions</h3>
                 <div className="space-y-2">
-                  <Button variant="ghost" className="w-full justify-start">
+                  <Button variant="ghost" className="w-full justify-start" onClick={() => setIsCreateTaskOpen(true)}>
                     <Plus className="h-4 w-4 mr-3" />
                     Add Task
                   </Button>
@@ -228,19 +320,22 @@ export default function ProjectDetail() {
 
             <div className="mt-6">
               <TabsContent value="board" className="space-y-6">
-                <div className="text-center py-12">
-                  <Target className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-foreground mb-2">
-                    Kanban Board
-                  </h3>
-                  <p className="text-muted-foreground mb-6">
-                    Drag and drop tasks between columns to track progress.
-                  </p>
-                  <Button variant="hero">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-xl font-semibold text-foreground">Task Board</h3>
+                    <p className="text-sm text-muted-foreground">Drag and drop tasks to update their status</p>
+                  </div>
+                  <Button onClick={() => setIsCreateTaskOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add First Task
+                    Add Task
                   </Button>
                 </div>
+                
+                <KanbanBoard 
+                  tasks={tasks}
+                  onTaskMove={handleTaskMove}
+                  onTaskUpdate={handleTaskUpdate}
+                />
               </TabsContent>
 
               <TabsContent value="list" className="space-y-6">
@@ -252,7 +347,7 @@ export default function ProjectDetail() {
                   <p className="text-muted-foreground mb-6">
                     View all tasks in a detailed list format with sorting and filtering options.
                   </p>
-                  <Button variant="hero">
+                  <Button variant="hero" onClick={() => setIsCreateTaskOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Create Task
                   </Button>
@@ -310,6 +405,15 @@ export default function ProjectDetail() {
           </Tabs>
         </motion.div>
       </div>
+
+      {/* Modals */}
+      <CreateTaskModal 
+        open={isCreateTaskOpen} 
+        onOpenChange={setIsCreateTaskOpen}
+        onSubmit={handleCreateTask}
+        projectId={projectId}
+        projectName={project.name}
+      />
     </div>
   );
 }
